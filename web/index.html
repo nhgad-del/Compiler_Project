@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Interactive Compiler Explorer</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+
+<header>
+    <h1>Interactive Compiler Explorer</h1>
+    <p>Write a small program, press Compile, then walk through the compiler phases one by one (the Learning Trail).</p>
+</header>
+
+<main>
+    <!-- ================= left column: source code ================= -->
+    <section>
+        <div class="card">
+            <h2>Source program</h2>
+            <label for="examples">Load an example</label>
+            <select id="examples"></select>
+
+            <label for="source">Program</label>
+            <textarea id="source" spellcheck="false"></textarea>
+
+            <label for="inputs">Input values for INPUT statements (numbers separated by spaces)</label>
+            <input id="inputs" type="text" placeholder="e.g. 7 3">
+
+            <div class="row">
+                <button id="compileBtn">Compile</button>
+                <span id="status" class="muted"></span>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Source-line tracer</h2>
+            <p class="note muted">Pick a source line to see its tokens, AST, intermediate code and assembly side by side.</p>
+            <div class="row">
+                <label for="traceLine" style="margin:0">Line</label>
+                <input id="traceLine" type="number" min="1" value="1" style="width:80px">
+            </div>
+            <pre id="traceBox" style="margin-top:10px">Compile a program first.</pre>
+        </div>
+    </section>
+
+    <!-- ================= right column: learning trail ================= -->
+    <section>
+        <div class="card">
+            <h2>Learning Trail</h2>
+            <div id="summary">No program compiled yet.</div>
+            <div id="stepper"></div>
+        </div>
+
+        <div class="card" id="detail">
+            <p class="muted">Press <b>Compile</b>, then click a phase above.</p>
+        </div>
+    </section>
+</main>
+
+<script>
+// ---------------------------------------------------------------------------
+// Example programs
+// ---------------------------------------------------------------------------
+var EXAMPLES = [
+    { name: "1. Arithmetic", input: "", code:
+"LET x = 10\nLET y = 20\nLET total = x + y\nPRINT total\n" },
+    { name: "2. Operator precedence", input: "", code:
+"LET a = 2 + 3 * 4\nLET b = (2 + 3) * 4\nPRINT a\nPRINT b\n" },
+    { name: "3. IF / ELSE with INPUT (try 7 3)", input: "7 3", code:
+"LET a = 0\nLET b = 0\nINPUT a\nINPUT b\nIF a > b {\n    PRINT a\n} ELSE {\n    PRINT b\n}\n" },
+    { name: "4. WHILE loop (sum 1..5)", input: "", code:
+"LET i = 1\nLET sum = 0\nWHILE i <= 5 {\n    sum = sum + i\n    i = i + 1\n}\nPRINT sum\n" },
+    { name: "5. Factorial (input 5)", input: "5", code:
+"LET n = 0\nINPUT n\nLET f = 1\nWHILE n > 1 {\n    f = f * n\n    n = n - 1\n}\nPRINT f\n" },
+    { name: "6. Constant folding", input: "", code:
+"LET a = 2 * 3 + 4\nLET b = a * 2\nPRINT b\nPRINT -(2 + 3)\n" },
+    { name: "ERROR: invalid character (lexical)", input: "", code:
+"LET x = 5 @ 3\nPRINT x\n" },
+    { name: "ERROR: missing value (syntax)", input: "", code:
+"LET x =\nPRINT x\n" },
+    { name: "ERROR: several syntax errors", input: "", code:
+"LET a =\nPRINT a\nLET = 5\nIF a {\n    PRINT a\n}\nPRINT (1 + 2\n" },
+    { name: "ERROR: undeclared variable (semantic)", input: "", code:
+"LET x = 5\nPRINT y\n" },
+    { name: "ERROR: division by zero (semantic)", input: "", code:
+"LET x = 10 / 0\nPRINT x\n" }
+];
+
+// ---------------------------------------------------------------------------
+// Small helpers (everything is inserted with textContent, never innerHTML)
+// ---------------------------------------------------------------------------
+function el(tag, cls, text) {
+    var e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (text !== undefined) e.textContent = text;
+    return e;
+}
+function $(id) { return document.getElementById(id); }
+
+var lastResult = null;
+var currentPhase = 0;
+
+// ---------------------------------------------------------------------------
+// Setup
+// ---------------------------------------------------------------------------
+var select = $("examples");
+EXAMPLES.forEach(function (ex, i) {
+    var o = el("option", "", ex.name);
+    o.value = i;
+    select.appendChild(o);
+});
+select.addEventListener("change", function () { loadExample(select.value); });
+function loadExample(i) {
+    $("source").value = EXAMPLES[i].code;
+    $("inputs").value = EXAMPLES[i].input;
+}
+loadExample(0);
+
+$("compileBtn").addEventListener("click", compile);
+$("traceLine").addEventListener("input", showTrace);
+
+// ---------------------------------------------------------------------------
+// Talk to the C++ server
+// ---------------------------------------------------------------------------
+function compile() {
+    $("status").textContent = "Compiling...";
+    var body = $("inputs").value.replace(/\n/g, " ") + "\n" + $("source").value;
+    fetch("/compile", { method: "POST", body: body })
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+            if (data.error) { $("status").textContent = data.error; return; }
+            $("status").textContent = "";
+            lastResult = data;
+            renderSummary();
+            // jump to the first phase with an error, otherwise show phase 1
+            currentPhase = 0;
+            for (var i = 0; i < data.phases.length; i++)
+                if (data.phases[i].status === "error") { currentPhase = i; break; }
+            renderStepper();
+            renderPhase();
+            showTrace();
+        })
+        .catch(function () {
+            $("status").textContent = "Cannot reach the compiler. Start it with:  ./explorer --serve";
+        });
+}
+
+// ---------------------------------------------------------------------------
+// Rendering
+// ---------------------------------------------------------------------------
+function renderSummary() {
+    var box = $("summary");
+    box.innerHTML = "";
+    var d = lastResult;
+    box.className = d.success ? "ok" : "error";
+    box.appendChild(el("b", "", d.success ? "Compilation succeeded" : "Compilation failed"));
+    box.appendChild(el("span", "", "  -  " + d.errorCount + " error(s), " + d.warningCount + " warning(s)"));
+
+    if (d.errorCount > 0) {
+        var ul = el("ul");
+        d.phases.forEach(function (p, idx) {
+            p.errors.forEach(function (e) {
+                var li = el("li");
+                var a = el("a", "", e.phase + ", line " + e.line);
+                a.addEventListener("click", function () { currentPhase = idx; renderStepper(); renderPhase(); });
+                li.appendChild(a);
+                li.appendChild(el("span", "", ": " + e.message));
+                ul.appendChild(li);
+            });
+        });
+        box.appendChild(ul);
+    }
+}
+
+function renderStepper() {
+    var s = $("stepper");
+    s.innerHTML = "";
+    lastResult.phases.forEach(function (p, i) {
+        var b = el("button", p.status + (i === currentPhase ? " active" : ""), String(i + 1));
+        b.title = p.title;
+        b.addEventListener("click", function () { currentPhase = i; renderStepper(); renderPhase(); });
+        s.appendChild(b);
+    });
+}
+
+function errorCard(e, isWarning) {
+    var card = el("div", "err-card" + (isWarning ? " warn" : ""));
+    var where = e.phase + " - line " + e.line + (e.col > 0 ? ", column " + e.col : "");
+    card.appendChild(el("div", "where", (isWarning ? "WARNING  " : "ERROR  ") + "(found by: " + where + ")"));
+    card.appendChild(el("div", "msg", e.message));
+    var pre = el("pre");
+    var numWidth = String(e.line).length;
+    pre.appendChild(document.createTextNode(e.line + " | " + e.source + "\n"));
+    if (e.col > 0) {
+        var pad = new Array(numWidth + 1).join(" ") + " | " + new Array(e.col).join(" ");
+        pre.appendChild(document.createTextNode(pad));
+        pre.appendChild(el("span", "caret", "^"));
+    }
+    card.appendChild(pre);
+    if (e.hint) card.appendChild(el("div", "hint", "Why? " + e.hint));
+    return card;
+}
+
+function renderPhase() {
+    var p = lastResult.phases[currentPhase];
+    var box = $("detail");
+    box.innerHTML = "";
+
+    var h = el("h2", "", p.title);
+    h.appendChild(el("span", "badge " + p.status, p.status.toUpperCase()));
+    box.appendChild(h);
+
+    box.appendChild(el("h3", "", "What this phase does"));
+    box.appendChild(el("div", "note", p.explain));
+
+    box.appendChild(el("h3", "", "Output of this phase"));
+    box.appendChild(el("pre", "", p.output));
+
+    if (p.errors.length || p.warnings.length) {
+        box.appendChild(el("h3", "", "Errors and warnings detected here (Error Learning Mode)"));
+        p.errors.forEach(function (e) { box.appendChild(errorCard(e, false)); });
+        p.warnings.forEach(function (e) { box.appendChild(errorCard(e, true)); });
+    }
+
+    if (p.changes) {
+        box.appendChild(el("h3", "", "How the representation changed"));
+        box.appendChild(el("div", "note", p.changes));
+    }
+
+    box.appendChild(el("h3", "", "Next stage"));
+    box.appendChild(el("div", "note", p.next));
+
+    var row = el("div", "row");
+    var prev = el("button", "secondary", "< Previous phase");
+    prev.disabled = currentPhase === 0;
+    prev.addEventListener("click", function () { currentPhase--; renderStepper(); renderPhase(); });
+    var next = el("button", "", "Next phase >");
+    next.disabled = currentPhase === lastResult.phases.length - 1;
+    next.addEventListener("click", function () { currentPhase++; renderStepper(); renderPhase(); });
+    row.appendChild(prev);
+    row.appendChild(next);
+    box.appendChild(row);
+}
+
+function showTrace() {
+    if (!lastResult) return;
+    var n = parseInt($("traceLine").value, 10);
+    var t = lastResult.traces[String(n)];
+    $("traceBox").textContent = t ? t : "This program has " + lastResult.lineCount + " line(s). Choose a line in that range.";
+}
+</script>
+</body>
+</html>
