@@ -1,0 +1,57 @@
+T01	Valid arithmetic (x + y)	Execution check	./explorer examples/01_arithmetic.txt	Optimised code output  : 30	Optimised code output  : 30	PASS
+T02	Operator precedence and parentheses	Execution check	./explorer examples/02_precedence.txt	Original code output   : 14 20 3 10 2	Original code output   : 14 20 3 10 2	PASS
+T03	Parse tree keeps the parentheses	Parse tree	./explorer examples/02_precedence.txt --phase parsetree	'('	│           │   ├── '('	PASS
+T04	AST does not keep the parentheses	AST	./explorer examples/02_precedence.txt --phase ast	does not contain: '('	(text absent, as expected)	PASS
+T05	Variable declaration then assignment	Execution check	./explorer examples/03_assignment.txt	Original code output   : 12	Original code output   : 12	PASS
+T06	IF/ELSE with a constant condition (true)	Execution check	./explorer examples/04_if_else.txt	Optimised code output  : 1	Optimised code output  : 1	PASS
+T07	Optimiser decides constant IF at compile time	Optimisation	./explorer examples/04_if_else.txt --phase opt	condition is always true	* Line 3: condition is always true: ifFalse jump removed	PASS
+T08	IF/ELSE with INPUT, first branch	Execution check	./explorer examples/05_input_max.txt --input 7 3	Optimised code output  : 7	Optimised code output  : 7	PASS
+T09	IF/ELSE with INPUT, else branch	Execution check	./explorer examples/05_input_max.txt --input 2 9	Optimised code output  : 9	Optimised code output  : 9	PASS
+T10	WHILE loop (sum 1..5)	Execution check	./explorer examples/06_while_sum.txt	Original code output   : 15	Original code output   : 15	PASS
+T11	WHILE + INPUT (factorial of 5)	Execution check	./explorer examples/07_factorial.txt --input 5	Original code output   : 120	Original code output   : 120	PASS
+T12	Nested WHILE and IF	Execution check	./explorer examples/23_nested.txt	Original code output   : 3	Original code output   : 3	PASS
+T13	Integer division truncates toward zero	Execution check	printf 'PRINT 7 / 2\nPRINT (0 - 7) / 2\n' | ./explorer - 	Original code output   : 3 -3	Original code output   : 3 -3	PASS
+T14	Unary minus	Execution check	printf 'PRINT -(2 + 3)\n' | ./explorer - 	Optimised code output  : -5	Optimised code output  : -5	PASS
+T15	Comments are ignored	Lexical Analysis	printf '# a comment\nPRINT 1 # another\n' | ./explorer - 	Original code output   : 1	Original code output   : 1	PASS
+T16	Empty program compiles	All	printf '' | ./explorer - 	compilation succeeded	RESULT: compilation succeeded (0 error(s), 0 warning(s))	PASS
+T17	Constant folding (2 * 3)	Optimisation	./explorer examples/08_constant_folding.txt --phase opt	constant folding: 2 * 3 = 6	* Line 2: constant folding: 2 * 3 = 6	PASS
+T18	Constant propagation + folding result	Execution check	./explorer examples/08_constant_folding.txt	Optimised code output  : 20 -5	Optimised code output  : 20 -5	PASS
+T19	Optimised result identical to original	Execution check	./explorer examples/08_constant_folding.txt	IDENTICAL	Comparison: IDENTICAL - the optimisation preserved the meaning of the program.	PASS
+T20	No propagation across a loop label	Optimisation	./explorer examples/06_while_sum.txt --phase opt	does not contain: 'i' replaced	(text absent, as expected)	PASS
+T21	Temporaries merged (t2 into sum)	Optimisation	./explorer examples/06_while_sum.txt --phase opt	merged temporary t2 into 'sum'	* Line 5: merged temporary t2 into 'sum'	PASS
+T22	Pseudo-assembly is generated	Code generation	./explorer examples/01_arithmetic.txt --phase codegen	STORE total, R1	STORE total, R1	PASS
+T23	Invalid character	Lexical	./explorer examples/11_err_invalid_char.txt	Invalid character '@'	[Lexical Analysis] line 2, col 11: Invalid character '@'	PASS
+T24	Malformed number (12abc)	Lexical	./explorer examples/18_err_bad_number.txt	Malformed number '12abc'	[Lexical Analysis] line 2, col 9: Malformed number '12abc'	PASS
+T25	Number too large	Lexical	printf 'LET x = 1234567890123456789012\n' | ./explorer - 	is too large	[Lexical Analysis] line 1, col 9: Number '1234567890123456789012' is too large	PASS
+T26	Missing assignment value	Syntax	./explorer examples/10_err_missing_value.txt	Did you forget the value on the right side of '='?	Hint: Did you forget the value on the right side of '='?	PASS
+T27	Missing closing parenthesis	Syntax	./explorer examples/12_err_missing_paren.txt	Expected ')' to close the '('	[Syntax Analysis] line 2, col 15: Expected ')' to close the '(' but found 'PRINT' (it is on the next line)	PASS
+T28	Missing closing brace	Syntax	./explorer examples/15_err_missing_brace.txt	Expected '}' to close the block	[Syntax Analysis] line 3, col 12: Expected '}' to close the block but found the end of the file	PASS
+T29	Lower-case keyword hint	Syntax	./explorer examples/16_err_lowercase.txt	Did you mean 'LET'?	Hint: Keywords must be written in UPPERCASE. Did you mean 'LET'?	PASS
+T30	Error recovery: 4 errors in one run	Syntax	./explorer examples/19_err_multiple.txt	ERRORS (4):	ERRORS (4):	PASS
+T31	Undefined variable	Semantic	./explorer examples/09_err_undefined.txt	Variable 'y' is used before it is declared	[Semantic Analysis] line 3: Variable 'y' is used before it is declared	PASS
+T32	Assignment to undeclared variable	Semantic	./explorer examples/17_err_assign_undeclared.txt	Assignment to undeclared variable 'x'	[Semantic Analysis] line 2: Assignment to undeclared variable 'x'	PASS
+T33	Variable declared twice	Semantic	./explorer examples/14_err_redeclare.txt	is already declared	[Semantic Analysis] line 3: Variable 'x' is already declared	PASS
+T34	Division by constant zero	Semantic	./explorer examples/13_err_div_zero.txt	Division by zero	[Semantic Analysis] line 2: Division by zero	PASS
+T35	Reserved temporary name (t1)	Semantic	printf 'LET t1 = 5\nPRINT t1\n' | ./explorer - 	is reserved	[Semantic Analysis] line 1: The name 't1' is reserved	PASS
+T36	Unused variable gives a warning only	Semantic	./explorer examples/21_warning_unused.txt	declared but its value is never used	[Semantic Analysis] line 3: Variable 'unused' is declared but its value is never used	PASS
+T37	Warning does not stop compilation (exit 0)	Semantic	./explorer examples/21_warning_unused.txt	exit code 0	exit code 0	PASS
+T38	Division by zero variable caught at run time	Execution check	./explorer examples/20_runtime_div_zero.txt	run-time error on line 3: division by zero	Original code stopped  : run-time error on line 3: division by zero	PASS
+T39	Infinite loop stopped by step limit	Execution check	./explorer examples/22_infinite_loop.txt	stopped after 200000 steps	Original code stopped  : stopped after 200000 steps (the program may contain an infinite loop)	PASS
+T40	Arithmetic overflow detected	Execution check	printf 'LET x = 999999999999999999\nPRINT x * 999999999999999999\n' | ./explorer - 	arithmetic overflow	Original code stopped  : run-time error on line 2: arithmetic overflow	PASS
+T41	INPUT without values gives a clear message	Execution check	./explorer examples/05_input_max.txt	INPUT needs a value	Original code stopped  : run-time error on line 5: INPUT needs a value but none is left (type values in the 'Input values' box)	PASS
+T42	Non-numeric --input is rejected	Command line	./explorer examples/01_arithmetic.txt --input abc	Input values must be whole numbers	Input values must be whole numbers separated by spaces (problem: 'abc').	PASS
+T43	Compile error gives exit code 1	All	./explorer examples/09_err_undefined.txt	exit code 1	exit code 1	PASS
+T44	Success gives exit code 0	All	./explorer examples/01_arithmetic.txt	exit code 0	exit code 0	PASS
+T45	Single phase selectable (by name)	Learning Trail	./explorer examples/01_arithmetic.txt --phase lexer	WHAT THIS PHASE DOES	WHAT THIS PHASE DOES:	PASS
+T46	Phase shows how representation changed	Learning Trail	./explorer examples/01_arithmetic.txt --phase 4	HOW THE REPRESENTATION CHANGED	HOW THE REPRESENTATION CHANGED:	PASS
+T47	Phase explains the next stage	Learning Trail	./explorer examples/01_arithmetic.txt --phase ast	NEXT STAGE	NEXT STAGE:	PASS
+T48	Error Learning Mode names the phase + hint	Learning Trail	./explorer examples/09_err_undefined.txt	[Semantic Analysis] line 3	[Semantic Analysis] line 3: Variable 'y' is used before it is declared	PASS
+T49	Error shows source line with caret	Learning Trail	./explorer examples/12_err_missing_paren.txt	|               ^	|               ^	PASS
+T50	Later phases are skipped after an error	Learning Trail	./explorer examples/11_err_invalid_char.txt	Skipped: compilation stopped earlier because Lexical Analysis	Skipped: compilation stopped earlier because Lexical Analysis reported errors. Fix those errors first.	PASS
+T51	Source-line tracer: optimised code shown	Learning Trail	./explorer examples/06_while_sum.txt --trace 5	4. Optimised three-address code:	4. Optimised three-address code:	PASS
+T52	Source-line tracer: unoptimised vs optimised	Learning Trail	./explorer examples/06_while_sum.txt --trace 5	6:  sum = sum + i	6:  sum = sum + i	PASS
+T53	Tracer rejects a line that does not exist	Learning Trail	./explorer examples/06_while_sum.txt --trace 99	exit code 2	exit code 2	PASS
+T54	Web: server serves the HTML page	Web interface	curl http://127.0.0.1:8799/	page contains the title	page contains the title	PASS
+T55	Web: POST /compile returns JSON (success)	Web interface	curl -X POST --data-binary ... /compile	"success":true	"success":true	PASS
+T56	Web: POST /compile returns JSON (lexical error)	Web interface	curl -X POST --data-binary ... /compile	"success":false + Invalid character	"success":false + Invalid character	PASS
+T57	Web: unknown page gives HTTP 404	Web interface	curl http://127.0.0.1:8799/nothing	HTTP 404	HTTP 404	PASS
