@@ -1,0 +1,4 @@
+# Division by a VARIABLE that is zero: not caught at compile time, caught by the execution check
+LET z = 0
+LET x = 5 / z
+PRINT x

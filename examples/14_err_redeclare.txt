@@ -1,0 +1,4 @@
+# Semantic error: LET used twice for the same name
+LET x = 1
+LET x = 2
+PRINT x

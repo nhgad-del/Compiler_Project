@@ -1,0 +1,3 @@
+# Syntax error: block is never closed
+IF 1 < 2 {
+    PRINT 1

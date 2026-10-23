@@ -1,0 +1,11 @@
+# Operator precedence and parentheses
+LET a = 2 + 3 * 4
+LET b = (2 + 3) * 4
+LET c = 10 - 4 - 3
+LET d = 100 / 5 / 2
+LET e = -3 + 5
+PRINT a
+PRINT b
+PRINT c
+PRINT d
+PRINT e

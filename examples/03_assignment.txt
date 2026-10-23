@@ -1,0 +1,5 @@
+# Variable assignment after declaration
+LET x = 5
+x = x + 1
+x = x * 2
+PRINT x

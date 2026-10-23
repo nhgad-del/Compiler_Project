@@ -1,0 +1,7 @@
+# IF / ELSE with a constant condition (the optimiser can decide it at compile time)
+LET x = 15
+IF x > 10 {
+    PRINT 1
+} ELSE {
+    PRINT 0
+}

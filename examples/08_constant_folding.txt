@@ -1,0 +1,5 @@
+# Constant folding and propagation
+LET a = 2 * 3 + 4
+LET b = a * 2
+PRINT b
+PRINT -(2 + 3)

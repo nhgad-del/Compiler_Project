@@ -1,0 +1,5 @@
+# Valid arithmetic: variables and addition
+LET x = 10
+LET y = 20
+LET total = x + y
+PRINT total

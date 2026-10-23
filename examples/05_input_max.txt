@@ -1,0 +1,11 @@
+# INPUT and IF / ELSE: print the larger of two numbers
+# Run with:  ./explorer examples/05_input_max.txt --input "7 3"
+LET a = 0
+LET b = 0
+INPUT a
+INPUT b
+IF a > b {
+    PRINT a
+} ELSE {
+    PRINT b
+}

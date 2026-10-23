@@ -1,0 +1,3 @@
+# Semantic error: y is never declared
+LET x = 5
+PRINT y

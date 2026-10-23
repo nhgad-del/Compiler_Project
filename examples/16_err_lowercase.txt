@@ -1,0 +1,3 @@
+# Syntax error: keywords must be UPPERCASE
+let x = 5
+PRINT x

@@ -1,0 +1,10 @@
+# Factorial using INPUT and WHILE
+# Run with:  ./explorer examples/07_factorial.txt --input "5"
+LET n = 0
+INPUT n
+LET f = 1
+WHILE n > 1 {
+    f = f * n
+    n = n - 1
+}
+PRINT f

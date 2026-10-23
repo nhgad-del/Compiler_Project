@@ -1,0 +1,4 @@
+# Warning only: 'unused' is never read
+LET used = 1
+LET unused = 2
+PRINT used

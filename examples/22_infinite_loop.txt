@@ -1,0 +1,3 @@
+# Infinite loop: the execution check stops after a step limit
+WHILE 1 < 2 {
+}

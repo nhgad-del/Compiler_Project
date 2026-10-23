@@ -1,0 +1,3 @@
+# Semantic error: assignment without LET
+x = 5
+PRINT x

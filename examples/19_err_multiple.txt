@@ -1,0 +1,8 @@
+# Several syntax errors reported together (error recovery)
+LET a =
+PRINT a
+LET = 5
+IF a {
+    PRINT a
+}
+PRINT (1 + 2

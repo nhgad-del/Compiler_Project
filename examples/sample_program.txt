@@ -1,0 +1,10 @@
+# Sample program for the demonstration
+LET x = 10
+LET y = 20
+LET total = x + y * 2
+PRINT total
+LET i = 0
+WHILE i < 3 {
+    PRINT i * total
+    i = i + 1
+}
